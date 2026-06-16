@@ -1,0 +1,36 @@
+# Used by the Thunderstore CLI (tcli) to build/publish the package.
+# Manual upload? Just zip manifest.json + icon.png + README.md + CHANGELOG.md +
+# plugins/<dll> instead (see package.sh).
+
+[config]
+schemaVersion = "0.0.1"
+
+[package]
+namespace = "NEDOSTUPN0"
+name = "REPONativeUltrawide"
+versionNumber = "1.0.0"
+description = "Adapts the game and UI to ultrawide instead of stretching them. Works with any aspect ratio wider than 16:9."
+websiteUrl = "https://github.com/NEDOSTUPN0/REPONativeUltrawide"
+containsNsfwContent = false
+
+[package.dependencies]
+BepInEx-BepInExPack = "5.4.2304"
+
+[build]
+icon = "./icon.png"
+readme = "./README.md"
+outdir = "./dist"
+
+[[build.copy]]
+source = "./artifacts/bin/REPONativeUltrawide/release/com.github.NEDOSTUPN0.REPONativeUltrawide.dll"
+target = "plugins/"
+
+[[build.copy]]
+source = "./CHANGELOG.md"
+target = "/"
+
+[publish]
+communities = ["repo"]
+
+[publish.categories]
+repo = ["mods", "client-side"]

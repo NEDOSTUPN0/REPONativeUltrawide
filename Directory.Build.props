@@ -1,0 +1,27 @@
+<Project>
+  <!--
+    Shared paths and references for the mod project.
+    Override any path locally by creating "Local.Build.props" next to this file
+    (it is git-ignored) and redefining the property there.
+  -->
+
+  <Import Project="$(MSBuildThisFileDirectory)Local.Build.props"
+          Condition="Exists('$(MSBuildThisFileDirectory)Local.Build.props')" />
+
+  <!-- Game + deploy locations (defaults for this machine) -->
+  <PropertyGroup>
+    <GameRootDir Condition="'$(GameRootDir)' == ''">/Games/SteamLibrary/steamapps/common/REPO/</GameRootDir>
+    <ManagedDir Condition="'$(ManagedDir)' == ''">$(GameRootDir)REPO_Data/Managed/</ManagedDir>
+    <!-- Gale profile plugins directory: build = installed -->
+    <PluginsDir Condition="'$(PluginsDir)' == ''">$(HOME)/.local/share/com.kesomannen.gale/repo/profiles/r.e.p.o/BepInEx/plugins/</PluginsDir>
+  </PropertyGroup>
+
+  <!-- Shared compiler settings -->
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>embedded</DebugType>
+    <UseArtifactsOutput>true</UseArtifactsOutput>
+  </PropertyGroup>
+</Project>

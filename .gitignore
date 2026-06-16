@@ -1,0 +1,17 @@
+# Build output
+artifacts/
+bin/
+obj/
+
+# Local machine overrides
+Local.Build.props
+
+# IDE
+.vs/
+.idea/
+*.user
+
+# Nix
+.direnv/
+result
+dist/

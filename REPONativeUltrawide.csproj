@@ -1,0 +1,44 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <AssemblyName>com.github.NEDOSTUPN0.REPONativeUltrawide</AssemblyName>
+    <Product>REPONativeUltrawide</Product>
+    <Authors>NEDOSTUPN0</Authors>
+    <Version>1.0.0</Version>
+    <AssemblyVersion>1.0.0</AssemblyVersion>
+    <RootNamespace>RepoNativeUltrawide</RootNamespace>
+    <RestoreAdditionalProjectSources>
+      https://api.nuget.org/v3/index.json;
+      https://nuget.bepinex.dev/v3/index.json
+    </RestoreAdditionalProjectSources>
+  </PropertyGroup>
+
+  <!-- Modding dependencies -->
+  <ItemGroup>
+    <PackageReference Include="BepInEx.Core" Version="5.4.21" />
+  </ItemGroup>
+
+  <!-- Local game references (UnityEngine.*, Assembly-CSharp, etc.) -->
+  <ItemGroup Condition="Exists('$(ManagedDir)')">
+    <LocalReferences
+      Include="$(ManagedDir)*.dll"
+      Exclude="$(ManagedDir)Mono*.dll;$(ManagedDir)netstandard.dll;$(ManagedDir)System*.dll;$(ManagedDir)mscorlib.dll" />
+    <Reference Include="@(LocalReferences)" Private="false" />
+  </ItemGroup>
+
+  <Target Name="WarnNoManaged" BeforeTargets="Build" Condition="!Exists('$(ManagedDir)')">
+    <Warning Text="Managed directory not found: $(ManagedDir) — set GameRootDir in Local.Build.props" />
+  </Target>
+
+  <!-- Deploy the built dll straight into the Gale profile so it loads next launch -->
+  <Target Name="DeployToProfile" AfterTargets="Build" Condition="Exists('$(PluginsDir)')">
+    <PropertyGroup>
+      <DeployDir>$(PluginsDir)$(Product)/</DeployDir>
+    </PropertyGroup>
+    <MakeDir Directories="$(DeployDir)" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(DeployDir)" />
+    <Message Importance="High" Text="Deployed → $(DeployDir)$(TargetFileName)" />
+  </Target>
+
+</Project>
