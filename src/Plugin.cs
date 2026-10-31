@@ -47,9 +47,26 @@ namespace RepoNativeUltrawide
                 KeyCode.None,
                 "Bind a key to dump the full UI (Canvas/RectTransform) hierarchy + cameras to a file. Unbound by default.");
 
-            new Harmony(Guid).PatchAll();
+            ApplyPatches(new Harmony(Guid));
 
             Log.LogInfo($"{Name} {Version} loaded (enabled={Enabled.Value}).");
+        }
+
+        // Patch each class separately: if a game update breaks one patch (renamed or overloaded
+        // method), the rest of the mod still loads instead of PatchAll aborting everything.
+        private static void ApplyPatches(Harmony harmony)
+        {
+            foreach (var type in AccessTools.GetTypesFromAssembly(typeof(Plugin).Assembly))
+            {
+                try
+                {
+                    harmony.CreateClassProcessor(type).Patch();
+                }
+                catch (Exception e)
+                {
+                    Log.LogError($"Failed to apply patch {type.Name}: {e.Message}");
+                }
+            }
         }
 
         internal static void DumpHierarchy()

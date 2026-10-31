@@ -42,7 +42,6 @@ namespace RepoNativeUltrawide
         // screen aspect via RenderTextureMain's internal originals (no FovUpdate needed).
         private static FieldInfo? _texWidthField;
         private static FieldInfo? _texHeightField;
-        private static float _mainTexBaseWidth;
 
         private static bool _wasModified;
 
@@ -235,24 +234,18 @@ namespace RepoNativeUltrawide
             if (height <= 0f)
                 return;
 
-            if (_mainTexBaseWidth == 0f)
-                _mainTexBaseWidth = width;
-
             float desiredWidth = Mathf.Round(height * aspect);
             if (Mathf.Abs(width - desiredWidth) > 0.5f)
                 _texWidthField.SetValue(rtm, desiredWidth);
         }
 
+        // The vanilla size depends on the Render Size setting, so let the game re-apply it
+        // rather than restoring a width captured before the setting may have changed.
         private static void RestoreMainTextureAspect()
         {
-            if (_texWidthField == null || _mainTexBaseWidth == 0f)
+            if (RenderTextureMain.instance == null || GraphicsManager.instance == null)
                 return;
-            var rtm = RenderTextureMain.instance;
-            if (rtm == null)
-                return;
-            float width = (float)_texWidthField.GetValue(rtm);
-            if (Mathf.Abs(width - _mainTexBaseWidth) > 0.5f)
-                _texWidthField.SetValue(rtm, _mainTexBaseWidth);
+            GraphicsManager.instance.UpdateRenderSize();
         }
 
         private static void ResizeRenderTexture(RenderTexture rt, int width, int height, Camera? cam)
