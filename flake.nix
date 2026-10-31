@@ -13,6 +13,7 @@
       devShells.${system}.default = pkgs.mkShell {
         packages = [
           pkgs.dotnet-sdk_8
+          pkgs.zip
         ];
 
         DOTNET_CLI_TELEMETRY_OPTOUT = "1";
