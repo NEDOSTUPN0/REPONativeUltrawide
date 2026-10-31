@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.1
+
+- Updated for R.E.P.O. v0.5.0 (the mod failed to load after the game update)
+- Fixed the main menu layout for the new v0.5.0 menu structure
+- Item discovery highlights now line up with the item on ultrawide, including off-centre items
+- A broken patch after a future game update no longer disables the whole mod
+
 ## 1.0.0
 
 Initial release.

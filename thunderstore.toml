@@ -8,7 +8,7 @@ schemaVersion = "0.0.1"
 [package]
 namespace = "NEDOSTUPN0"
 name = "REPONativeUltrawide"
-versionNumber = "1.0.0"
+versionNumber = "1.0.1"
 description = "Adapts the game and UI to ultrawide instead of stretching them. Works with any aspect ratio wider than 16:9."
 websiteUrl = "https://github.com/NEDOSTUPN0/REPONativeUltrawide"
 containsNsfwContent = false

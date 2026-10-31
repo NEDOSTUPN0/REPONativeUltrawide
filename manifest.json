@@ -1,6 +1,6 @@
 {
   "name": "REPONativeUltrawide",
-  "version_number": "1.0.0",
+  "version_number": "1.0.1",
   "website_url": "https://github.com/NEDOSTUPN0/REPONativeUltrawide",
   "description": "Adapts the game and UI to ultrawide instead of stretching them. Works with any aspect ratio wider than 16:9.",
   "dependencies": [

@@ -16,7 +16,7 @@ namespace RepoNativeUltrawide
     {
         public const string Guid = "com.github.NEDOSTUPN0.REPONativeUltrawide";
         public const string Name = "REPONativeUltrawide";
-        public const string Version = "1.0.0";
+        public const string Version = "1.0.1";
 
         internal static ManualLogSource Log = null!;
 
