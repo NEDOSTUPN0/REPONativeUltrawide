@@ -1,5 +1,7 @@
+using System;
 using System.Collections.Generic;
 using System.Reflection;
+using HarmonyLib;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -56,6 +58,11 @@ namespace RepoNativeUltrawide
 
         private static bool _wasModified;
 
+        // SemiUI HUD widgets we shifted, with the shift they currently carry (see OffsetHudElement).
+        private static readonly List<HudElementShift> _hudElements = new();
+        private static AccessTools.FieldRef<SemiUI, Vector2>? _hidePositionCurrent;
+        private static bool _hidePositionCurrentResolved;
+
         // Read by the SemiUI Harmony patch (which runs from the game's Start, not our Tick).
         internal static bool EnabledForPatch;
 
@@ -63,6 +70,7 @@ namespace RepoNativeUltrawide
         {
             EnabledForPatch = enabled;
             AcquireReferences();
+            SyncHudElements();
 
             float aspect = (float)Screen.width / Screen.height;
 
@@ -338,19 +346,13 @@ namespace RepoNativeUltrawide
         private static RectTransform? GetRect(Component? c) => c != null ? c.GetComponent<RectTransform>() : null;
 
         /// <summary>
-        /// Shifts a SemiUI HUD widget's pinned position outward to the real screen edge,
-        /// based on its anchor. Called once per element from the SemiUI.Start postfix.
+        /// Registers a SemiUI HUD widget and shifts its pinned positions outward to the real screen
+        /// edge for the current aspect. Called once per element from the SemiUI.Start postfix; later
+        /// aspect changes (window resize, toggling the mod) are applied by <see cref="SyncHudElements"/>.
         /// </summary>
         internal static void OffsetHudElement(SemiUI ui)
         {
-            if (!EnabledForPatch || ui == null)
-                return;
-
-            float aspect = (float)Screen.width / Screen.height;
-            if (aspect <= BaseAspect + 0.001f)
-                return;
-
-            if (HUDCanvas.instance == null)
+            if (ui == null || HUDCanvas.instance == null)
                 return;
 
             var gameHud = HUDCanvas.instance.transform.Find("HUD/Game Hud");
@@ -362,27 +364,110 @@ namespace RepoNativeUltrawide
             if (t == null || !t.IsChildOf(gameHud))
                 return;
 
-            // Same pixel inset from the edge as 16:9: the HUD camera's half-width grows by
-            // 200 * (aspect - 16/9) world units, so push edge widgets out by that amount.
-            float extra = 200f * (aspect - BaseAspect);
-            float anchorOffsetX = (t.anchorMin.x - 0.5f) * 2f * extra;
-
-            // Centre-anchored widgets (e.g. the Level readout) get no anchor-based shift, but they
-            // can still be parked near or past a screen edge. Hidden widgets sit just off-screen at
-            // 16:9, which on ultrawide is inside the view, so push them out by the position instead.
-            ui.showPosition += new Vector2(OffsetFor(ui.showPosition.x, anchorOffsetX, extra), 0f);
-            ui.hidePosition += new Vector2(OffsetFor(ui.hidePosition.x, anchorOffsetX, extra), 0f);
+            // Every shift is linear in `extra`, so store per-position factors (taken from the vanilla
+            // positions) and re-apply only the difference when the aspect changes.
+            float anchorFactor = (t.anchorMin.x - 0.5f) * 2f;
+            var shift = new HudElementShift
+            {
+                Ui = ui,
+                ShowFactor = ShiftFactor(ui.showPosition.x, anchorFactor),
+                HideFactor = ShiftFactor(ui.hidePosition.x, anchorFactor),
+            };
+            _hudElements.Add(shift);
+            ApplyShift(shift, CurrentHudExtra());
         }
 
-        // Anchor-based shift when the anchor is on a side; otherwise shift outward by the side the
-        // position is on, if it is out toward an edge.
-        private static float OffsetFor(float posX, float anchorOffsetX, float extra)
+        // How far a position moves per unit of `extra`: anchor-based when the anchor is on a side;
+        // otherwise outward by the side the position is on, if it is out toward an edge.
+        // Centre-anchored widgets (e.g. the Level readout) get no anchor-based shift, but they can
+        // still be parked near or past a screen edge. Hidden widgets sit just off-screen at 16:9,
+        // which on ultrawide is inside the view, so push them out by the position instead.
+        private static float ShiftFactor(float posX, float anchorFactor)
         {
-            if (!Mathf.Approximately(anchorOffsetX, 0f))
-                return anchorOffsetX;
+            if (!Mathf.Approximately(anchorFactor, 0f))
+                return anchorFactor;
             if (Mathf.Abs(posX) < EdgeThreshold)
                 return 0f;
-            return Mathf.Sign(posX) * extra;
+            return Mathf.Sign(posX);
+        }
+
+        // Same pixel inset from the edge as 16:9: the HUD camera's half-width grows by
+        // 200 * (aspect - 16/9) world units, so edge widgets move out by that amount.
+        private static float CurrentHudExtra()
+        {
+            if (!EnabledForPatch)
+                return 0f;
+            float aspect = (float)Screen.width / Screen.height;
+            return aspect > BaseAspect + 0.001f ? 200f * (aspect - BaseAspect) : 0f;
+        }
+
+        // Re-applies HUD widget shifts when the aspect (or the enabled state) changed since they were
+        // applied; widgets created earlier would otherwise keep the old aspect's positions.
+        private static void SyncHudElements()
+        {
+            float extra = CurrentHudExtra();
+            for (int i = _hudElements.Count - 1; i >= 0; i--)
+            {
+                var shift = _hudElements[i];
+                if (shift.Ui == null)
+                    _hudElements.RemoveAt(i);
+                else
+                    ApplyShift(shift, extra);
+            }
+        }
+
+        private static void ApplyShift(HudElementShift shift, float extra)
+        {
+            float delta = extra - shift.AppliedExtra;
+            if (Mathf.Abs(delta) < 0.001f)
+                return;
+
+            var ui = shift.Ui;
+            var oldShow = ui.showPosition;
+            var oldHide = ui.hidePosition;
+            ui.showPosition += new Vector2(shift.ShowFactor * delta, 0f);
+            ui.hidePosition += new Vector2(shift.HideFactor * delta, 0f);
+            shift.AppliedExtra = extra;
+
+            // SemiUI animates from its current position towards the new target, so a hidden widget
+            // would visibly "woosh" from its show position to the new hide position. Snap a widget
+            // that is at rest instead; one mid-animation keeps lerping between the updated targets.
+            var current = HidePositionCurrent;
+            if (current == null)
+                return;
+            ref Vector2 pos = ref current(ui);
+            if (pos == oldHide)
+                pos = ui.hidePosition;
+            else if (pos == oldShow)
+                pos = ui.showPosition;
+        }
+
+        private static AccessTools.FieldRef<SemiUI, Vector2>? HidePositionCurrent
+        {
+            get
+            {
+                if (!_hidePositionCurrentResolved)
+                {
+                    _hidePositionCurrentResolved = true;
+                    try
+                    {
+                        _hidePositionCurrent = AccessTools.FieldRefAccess<SemiUI, Vector2>("hidePositionCurrent");
+                    }
+                    catch (Exception e)
+                    {
+                        Plugin.Log.LogWarning($"SemiUI.hidePositionCurrent not found; HUD widgets may animate on resize. {e.Message}");
+                    }
+                }
+                return _hidePositionCurrent;
+            }
+        }
+
+        private sealed class HudElementShift
+        {
+            public SemiUI Ui = null!;
+            public float ShowFactor;
+            public float HideFactor;
+            public float AppliedExtra;
         }
     }
 }
