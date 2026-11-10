@@ -20,6 +20,10 @@ namespace RepoNativeUltrawide
     {
         private const float BaseAspect = 16f / 9f;
 
+        // Distance from Game Hud's centre beyond which a centre-anchored widget counts as sitting
+        // at a side edge (the vanilla view is ~±356 wide).
+        private const float EdgeThreshold = 200f;
+
         // Cached references; each is re-fetched when it goes null (Unity-null) after a rebuild.
         private static RectTransform? _mainDisplay;  // the Render Texture Main quad (the world view)
         private static RawImage? _overlayDisplay;   // RenderTextureMain.overlayRawImage (the on-screen quad)
@@ -317,13 +321,24 @@ namespace RepoNativeUltrawide
             // Same pixel inset from the edge as 16:9: the HUD camera's half-width grows by
             // 200 * (aspect - 16/9) world units, so push edge widgets out by that amount.
             float extra = 200f * (aspect - BaseAspect);
-            float offsetX = (t.anchorMin.x - 0.5f) * 2f * extra;
-            if (Mathf.Approximately(offsetX, 0f))
-                return;
+            float anchorOffsetX = (t.anchorMin.x - 0.5f) * 2f * extra;
 
-            var delta = new Vector2(offsetX, 0f);
-            ui.showPosition += delta;
-            ui.hidePosition += delta;
+            // Centre-anchored widgets (e.g. the Level readout) get no anchor-based shift, but they
+            // can still be parked near or past a screen edge. Hidden widgets sit just off-screen at
+            // 16:9, which on ultrawide is inside the view, so push them out by the position instead.
+            ui.showPosition += new Vector2(OffsetFor(ui.showPosition.x, anchorOffsetX, extra), 0f);
+            ui.hidePosition += new Vector2(OffsetFor(ui.hidePosition.x, anchorOffsetX, extra), 0f);
+        }
+
+        // Anchor-based shift when the anchor is on a side; otherwise shift outward by the side the
+        // position is on, if it is out toward an edge.
+        private static float OffsetFor(float posX, float anchorOffsetX, float extra)
+        {
+            if (!Mathf.Approximately(anchorOffsetX, 0f))
+                return anchorOffsetX;
+            if (Mathf.Abs(posX) < EdgeThreshold)
+                return 0f;
+            return Mathf.Sign(posX) * extra;
         }
     }
 }
