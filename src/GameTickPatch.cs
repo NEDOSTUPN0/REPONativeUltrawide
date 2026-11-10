@@ -17,7 +17,9 @@ namespace RepoNativeUltrawide
             bool enabled = Plugin.Enabled.Value;
             UltrawideHud.Tick(enabled);
             MenuAdjust.Tick(enabled);
-            PostProcessAdjust.Tick(enabled && Plugin.LensDistortionFix.Value);
+            PostProcessAdjust.Tick(
+                enabled && Plugin.LensDistortionFix.Value,
+                enabled && Plugin.DisableHudLensEffects.Value);
 
             if (Plugin.DumpKey.Value != KeyCode.None && Input.GetKeyDown(Plugin.DumpKey.Value))
                 Plugin.DumpHierarchy();

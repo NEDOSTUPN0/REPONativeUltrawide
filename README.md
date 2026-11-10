@@ -38,6 +38,7 @@ A few toggles in `BepInEx/config/com.github.NEDOSTUPN0.REPONativeUltrawide.cfg`:
 
 - **Enabled** - master switch
 - **Lens Distortion Fix** - tone down the edge distortion and chromatic aberration on ultrawide
+- **Disable HUD Lens Effects** - turn the distortion and chromatic aberration off on the HUD completely (off by default; for the world use the game's own Lens Effect / Chromatic Aberration settings)
 - A debug UI-dump key (unbound by default)
 
 ## Notes

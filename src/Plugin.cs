@@ -23,6 +23,7 @@ namespace RepoNativeUltrawide
         internal static ConfigEntry<KeyCode> DumpKey = null!;
         internal static ConfigEntry<bool> Enabled = null!;
         internal static ConfigEntry<bool> LensDistortionFix = null!;
+        internal static ConfigEntry<bool> DisableHudLensEffects = null!;
 
         private void Awake()
         {
@@ -40,6 +41,14 @@ namespace RepoNativeUltrawide
                 true,
                 "Reduce the 'old TV' lens distortion and chromatic aberration on ultrawide so the " +
                 "edges/corners stay as moderate and readable as they are at 16:9.");
+
+            DisableHudLensEffects = Config.Bind(
+                "General",
+                "Disable HUD Lens Effects",
+                false,
+                "Turn the 'old TV' lens distortion and chromatic aberration off completely on the HUD. " +
+                "For the world, use the game's own Lens Effect / Chromatic Aberration graphics settings " +
+                "(they don't affect the HUD).");
 
             DumpKey = Config.Bind(
                 "Debug",
