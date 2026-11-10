@@ -47,6 +47,13 @@ namespace RepoNativeUltrawide
         private static FieldInfo? _texWidthField;
         private static FieldInfo? _texHeightField;
 
+        // Vanilla Small/Medium/Large preset widths of the RenderTextureMain they were read from.
+        private static RenderTextureMain? _presetOwner;
+        private static float[]? _presetBaseWidths;
+
+        // Max width mismatch (px) accepted before forcing textureWidthOriginal to the screen aspect.
+        private const float TextureWidthTolerance = 2f;
+
         private static bool _wasModified;
 
         // Read by the SemiUI Harmony patch (which runs from the game's Start, not our Tick).
@@ -224,6 +231,12 @@ namespace RepoNativeUltrawide
             if (rtm == null)
                 return;
 
+            // Widen the per-quality presets first. Anything that derives the texture size from
+            // them (the game's Render Size setting, or mods such as BetterView that rewrite the
+            // size every frame from textureWidthLarge) then already gets the right aspect, so we
+            // never fight over textureWidthOriginal.
+            WidenSizePresets(rtm, aspect);
+
             if (_texWidthField == null)
             {
                 var t = typeof(RenderTextureMain);
@@ -238,15 +251,46 @@ namespace RepoNativeUltrawide
             if (height <= 0f)
                 return;
 
+            // Fallback for a size that was not derived from the presets (e.g. set before we widened
+            // them). The tolerance absorbs rounding when another mod scales the widened preset
+            // (round(w) * scale vs round(w * scale)); correcting that would make both sides
+            // recreate the texture every frame.
             float desiredWidth = Mathf.Round(height * aspect);
-            if (Mathf.Abs(width - desiredWidth) > 0.5f)
+            if (Mathf.Abs(width - desiredWidth) > TextureWidthTolerance)
                 _texWidthField.SetValue(rtm, desiredWidth);
         }
 
+        private static void WidenSizePresets(RenderTextureMain rtm, float aspect)
+        {
+            if (_presetOwner != rtm)
+            {
+                _presetOwner = rtm;
+                _presetBaseWidths = new[] { rtm.textureWidthSmall, rtm.textureWidthMedium, rtm.textureWidthLarge };
+            }
+
+            rtm.textureWidthSmall = PresetWidth(_presetBaseWidths![0], rtm.textureHeightSmall, aspect);
+            rtm.textureWidthMedium = PresetWidth(_presetBaseWidths[1], rtm.textureHeightMedium, aspect);
+            rtm.textureWidthLarge = PresetWidth(_presetBaseWidths[2], rtm.textureHeightLarge, aspect);
+        }
+
+        private static float PresetWidth(float baseWidth, float height, float aspect) =>
+            height > 0f ? Mathf.Round(height * aspect) : baseWidth;
+
+        private static void RestoreSizePresets()
+        {
+            var rtm = RenderTextureMain.instance;
+            if (rtm == null || rtm != _presetOwner || _presetBaseWidths == null)
+                return;
+            rtm.textureWidthSmall = _presetBaseWidths[0];
+            rtm.textureWidthMedium = _presetBaseWidths[1];
+            rtm.textureWidthLarge = _presetBaseWidths[2];
+        }
+
         // The vanilla size depends on the Render Size setting, so let the game re-apply it
-        // rather than restoring a width captured before the setting may have changed.
+        // (from the restored presets) rather than restoring a width captured earlier.
         private static void RestoreMainTextureAspect()
         {
+            RestoreSizePresets();
             if (RenderTextureMain.instance == null || GraphicsManager.instance == null)
                 return;
             GraphicsManager.instance.UpdateRenderSize();
