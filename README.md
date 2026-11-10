@@ -14,13 +14,13 @@ It **adapts** the interface to your ultrawide monitor: HUD elements, menus and p
 - Loading screens, startup splashes and tutorial bars fixed too
 - The mouse cursor reaches the whole screen
 - Item discovery highlights line up with the items across the whole width
-- The "old TV" lens distortion and chromatic aberration are toned down so the edges stay readable
+- The "old TV" lens distortion and chromatic aberration are toned down so the edges stay readable (or turned off on the HUD entirely, if you prefer)
 - Works with **any** aspect ratio wider than 16:9 - 21:9, 32:9, whatever you've got
 - **Fully standalone** - no other mods required
 
 ## Compatibility
 
-Updated for R.E.P.O. v0.5.0. Runs on its own. Compatible with **FovUpdate** and, as far as I can tell, any other mod.
+Updated for R.E.P.O. v0.5.0. Runs on its own. Compatible with **FovUpdate**, **BetterView** and, as far as I can tell, any other mod.
 
 Client-side only - just you need it installed.
 

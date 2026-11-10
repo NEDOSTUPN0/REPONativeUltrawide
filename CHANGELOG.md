@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.0
+
+- New option **Disable HUD Lens Effects** (off by default): turns the "old TV" lens distortion and chromatic aberration off on the HUD. For the world, use the game's own Lens Effect / Chromatic Aberration settings
+- Fixed the world being stretched when used together with BetterView
+- Fixed the level/moon readout showing at the right edge (including in the main menu) on super ultrawide screens such as 32:9 (thanks MrSheen123)
+- The level readout shown with the map now sits at the right screen edge, mirroring the upgrades list on the left
+- HUD elements now follow window resizes and aspect ratio changes without restarting the game
+
 ## 1.0.1
 
 - Updated for R.E.P.O. v0.5.0 (the mod failed to load after the game update)

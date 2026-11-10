@@ -5,8 +5,8 @@
     <AssemblyName>com.github.NEDOSTUPN0.REPONativeUltrawide</AssemblyName>
     <Product>REPONativeUltrawide</Product>
     <Authors>NEDOSTUPN0</Authors>
-    <Version>1.0.1</Version>
-    <AssemblyVersion>1.0.1</AssemblyVersion>
+    <Version>1.1.0</Version>
+    <AssemblyVersion>1.1.0</AssemblyVersion>
     <RootNamespace>RepoNativeUltrawide</RootNamespace>
     <RestoreAdditionalProjectSources>
       https://api.nuget.org/v3/index.json;
