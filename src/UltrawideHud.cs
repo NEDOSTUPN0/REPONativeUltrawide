@@ -38,9 +38,11 @@ namespace RepoNativeUltrawide
         private static RectTransform? _loading;      // LoadingUI root
         private static RectTransform? _splash;       // SplashScreenUI (startup studio/warning screen)
         private static Transform? _tutorial;         // TutorialUI (in-game tutorial bar)
+        private static MoonUI? _moon;                // MoonUI (moon phase reveal overlay)
 
         // Original (vanilla 16:9) sizes, captured the first time each rect is seen un-modified.
         private static readonly Dictionary<RectTransform, Vector2> _originalSizes = new();
+        private static readonly Dictionary<RectTransform, float> _originalPosX = new();
         private static int _overlayRtBaseHeight;
         private static int _overlayRtBaseWidth;
 
@@ -118,6 +120,8 @@ namespace RepoNativeUltrawide
                 _splash = GetRect(FindComponent<SplashScreenUI>());
             if (_tutorial == null)
                 _tutorial = FindComponent<TutorialUI>()?.transform;
+            if (_moon == null)
+                _moon = MoonUI.instance != null ? MoonUI.instance : FindComponent<MoonUI>();
         }
 
         private static void Apply(float aspect)
@@ -177,6 +181,20 @@ namespace RepoNativeUltrawide
                 SetWidthScaled(_tutorial.Find("Dummy Text Transform") as RectTransform, k);
             }
 
+            // Moon phase overlay: its dimming backdrop is a 16:9 rect and its corner ornaments sit
+            // at the 16:9 edges. The game only animates the corners' parents vertically and the
+            // ornaments' rotation, so widening the backdrop and moving the ornaments out is safe.
+            if (_moon != null)
+            {
+                if (_moon.backgroundImage != null)
+                    SetWidthScaled(_moon.backgroundImage.rectTransform, k);
+                float extra = 200f * (aspect - BaseAspect);
+                ShiftPosX(_moon.topCornerTransformLeft, -extra);
+                ShiftPosX(_moon.topCornerTransformRight, extra);
+                ShiftPosX(_moon.botCornerTransformLeft, -extra);
+                ShiftPosX(_moon.botCornerTransformRight, extra);
+            }
+
             // NOTE: menu repositioning is intentionally not done here. The menu is a per-page
             // system (left-aligned pages vs centred popups), so a blanket MenuHolder shift is
             // wrong. To be designed per page type.
@@ -188,6 +206,11 @@ namespace RepoNativeUltrawide
             {
                 if (kvp.Key != null)
                     kvp.Key.sizeDelta = kvp.Value;
+            }
+            foreach (var kvp in _originalPosX)
+            {
+                if (kvp.Key != null)
+                    kvp.Key.anchoredPosition = new Vector2(kvp.Value, kvp.Key.anchoredPosition.y);
             }
 
             RestoreMainTextureAspect();
@@ -219,6 +242,21 @@ namespace RepoNativeUltrawide
             var target = new Vector2(baseSize.y * aspect, baseSize.y);
             if (rt.sizeDelta != target)
                 rt.sizeDelta = target;
+        }
+
+        // anchoredPosition.x = originalX + offset (y unchanged)
+        private static void ShiftPosX(RectTransform? rt, float offset)
+        {
+            if (rt == null)
+                return;
+            if (!_originalPosX.TryGetValue(rt, out var baseX))
+            {
+                baseX = rt.anchoredPosition.x;
+                _originalPosX[rt] = baseX;
+            }
+            var pos = rt.anchoredPosition;
+            if (!Mathf.Approximately(pos.x, baseX + offset))
+                rt.anchoredPosition = new Vector2(baseX + offset, pos.y);
         }
 
         private static Vector2 OriginalSize(RectTransform rt)
