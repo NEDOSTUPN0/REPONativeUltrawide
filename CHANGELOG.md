@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.1
+
+- Fixed the moon phase screen being cut to a 16:9 box: its backdrop now covers the whole screen and its corner ornaments sit at the real screen edges
+
 ## 1.1.0
 
 - New option **Disable HUD Lens Effects** (off by default): turns the "old TV" lens distortion and chromatic aberration off on the HUD. For the world, use the game's own Lens Effect / Chromatic Aberration settings
